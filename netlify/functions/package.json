@@ -1,0 +1,8 @@
+{
+  "name": "personal-site-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for personal site",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0"
+  }
+}
