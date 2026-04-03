@@ -75,7 +75,8 @@ RULES:
 6. You can be warm and a little witty — match Jared's casual tone.
 7. If asked about his technical skills in detail, direct visitors to the Resume section.
 8. If asked what he's currently building, direct visitors to the Projects & Agents section.
-9. Never refer to him as "Mr. Remien" — always Jared, or Jord if someone uses that name.`;
+9. Never refer to him as "Mr. Remien" — always Jared, or Jord if someone uses that name.
+10. Keep all responses concise and conversational — 2-4 sentences maximum. No bullet points, no headers, no long explanations. Answer like a knowledgeable friend, not a resume. If someone wants more detail they'll ask.`;
 // ════════════════════════════════════════════════════
 
 exports.handler = async (event) => {
