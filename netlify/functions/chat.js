@@ -79,6 +79,7 @@ RULES:
 // ════════════════════════════════════════════════════
 
 exports.handler = async (event) => {
+  process.stdout.write('DEBUG KEY: ' + (process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 15) : 'NOT FOUND') + '\n');
   console.log('API Key exists:', !!process.env.ANTHROPIC_API_KEY);
   console.log('API Key prefix:', process.env.ANTHROPIC_API_KEY?.substring(0, 10));
 
