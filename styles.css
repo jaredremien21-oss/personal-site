@@ -1189,7 +1189,7 @@ input, button { font-family: var(--font-body); }
 .ct-img {
   width: 220px;
   height: 140px;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 .ct-arrow {
