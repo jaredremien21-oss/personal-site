@@ -1158,15 +1158,17 @@ input, button { font-family: var(--font-body); }
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
-  width: 200px;
+  width: 220px;
 }
 .country-tooltip.ct-visible {
   opacity: 1;
   transform: translateY(0);
+  pointer-events: auto;
 }
 .ct-img-wrap {
-  width: 200px;
-  height: 130px;
+  position: relative;
+  width: 220px;
+  height: 140px;
   background: var(--bg-alt);
   overflow: hidden;
   display: flex;
@@ -1185,9 +1187,52 @@ input, button { font-family: var(--font-body); }
   font-style: italic;
 }
 .ct-img {
-  width: 200px;
-  height: 130px;
+  width: 220px;
+  height: 140px;
   object-fit: cover;
+  display: block;
+}
+.ct-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.45);
+  border: none;
+  color: #fff;
+  font-size: 1.25rem;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  z-index: 2;
+  transition: background 0.15s;
+}
+.ct-arrow:hover { background: rgba(0,0,0,0.7); }
+.ct-arrow-prev { left: 5px; }
+.ct-arrow-next { right: 5px; }
+.ct-dots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 0 3px;
+  min-height: 14px;
+}
+.ct-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-light);
+  opacity: 0.35;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.ct-dot.active {
+  opacity: 1;
+  background: var(--green);
 }
 .ct-name {
   font-family: var(--font-head);
@@ -1195,7 +1240,7 @@ input, button { font-family: var(--font-body); }
   font-weight: 400;
   color: var(--text);
   text-align: center;
-  padding: 0.5rem 0.75rem 0.6rem;
+  padding: 0.4rem 0.75rem 0.55rem;
   border-top: 1px solid var(--sand);
 }
 

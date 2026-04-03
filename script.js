@@ -55,19 +55,38 @@ document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
 /* ─── 4. TRAVEL MAPS ─────────────────────────────── */
 
 // ══ VISITED COUNTRIES (ISO 3166-1 numeric codes) ══
-// Add more below — slug = /assets/travel/[slug].jpg
+// photos: filenames inside /assets/travel/[folder]/, alphabetical order
 const VISITED_COUNTRIES = {
-  392: { name: 'Japan',         slug: 'japan' },
-  756: { name: 'Switzerland',   slug: 'switzerland' },
-  352: { name: 'Iceland',       slug: 'iceland' },
-  724: { name: 'Spain',         slug: 'spain' },
-  380: { name: 'Italy',         slug: 'italy' },
-  300: { name: 'Greece',        slug: 'greece' },
-  152: { name: 'Chile',         slug: 'chile' },
-  484: { name: 'Mexico',        slug: 'mexico' },
-  620: { name: 'Portugal',      slug: 'portugal' },
-  840: { name: 'United States', slug: null },   // USA → opens states modal
-  // Add more: e.g. 826: { name: 'United Kingdom', slug: 'uk' }
+  392: { name: 'Japan',         folder: 'Japan',       photos: [
+    '1E772D0C-5AB1-4C3F-8340-2A7504FF8C33-46145-00002A57F24C96C3.JPG',
+    '3FFA8655-924F-4F89-8F2E-E39D019BF767-46145-00002B5BE5DA840A.JPG',
+    'DSCF7481.JPG','DSCF7813.JPG','IMG_6717.JPG','IMG_6723.JPG','IMG_8072.JPG',
+  ]},
+  756: { name: 'Switzerland',   folder: 'Switzerland', photos: [
+    'DSCF1516.JPG','DSCF1523.JPG','DSCF1783.JPG','DSCF2162.JPG','DSCF2339.JPG',
+    'DSCF2469.JPG','DSCF2556.JPG','DSCF2623.JPG','DSCF2657.JPG','DSCF2687.JPG',
+  ]},
+  352: { name: 'Iceland',       folder: 'Iceland',     photos: [
+    'IMG_1683.JPG','IMG_1720.JPG','IMG_1819.JPG','IMG_2223.JPG','IMG_4093.JPG',
+  ]},
+  724: { name: 'Spain',         folder: 'Spain',       photos: [
+    'IMG_0273.JPG','IMG_0321.JPG','IMG_2551.JPG',
+  ]},
+  380: { name: 'Italy',         folder: 'Italy',       photos: [
+    'IMG_1446.JPG','IMG_1459.JPG','IMG_1766.JPG','IMG_7050.JPG','IMG_9135.JPG','IMG_9170.JPG',
+  ]},
+  300: { name: 'Greece',        folder: 'Greece',      photos: [
+    'IMG_0164.JPG','IMG_0176.JPG','IMG_0204.JPG','IMG_2296.JPG',
+  ]},
+  152: { name: 'Chile',         folder: 'Chile',       photos: [] },
+  484: { name: 'Mexico',        folder: 'Mexico',      photos: [
+    'DSCF2559.JPG','DSCF2648.JPG','IMG_6765.JPG','IMG_7956.JPG',
+  ]},
+  620: { name: 'Portugal',      folder: 'Portugal',    photos: [] },
+  528: { name: 'Netherlands',   folder: 'Netherlands', photos: [
+    'IMG_0134.JPG','IMG_4250.JPG','IMG_4297.JPG','IMG_5619.JPG',
+  ]},
+  840: { name: 'United States', folder: null,          photos: [] }, // USA → opens states modal
 };
 
 // ══ US STATES (FIPS codes for unvisited) ══════════
@@ -119,7 +138,46 @@ function animateCount(el, target, duration = 1200, { suffix = '', decimals = 0 }
 const countryTooltip = document.getElementById('countryTooltip');
 const ctImg          = document.getElementById('ctImg');
 const ctName         = document.getElementById('ctName');
+const ctPlaceholder  = document.getElementById('ctPlaceholder');
+const ctPrev         = document.getElementById('ctPrev');
+const ctNext         = document.getElementById('ctNext');
+const ctDots         = document.getElementById('ctDots');
 const stateTooltip   = document.getElementById('stateTooltip');
+
+// ── Carousel state ────────────────────────────────
+const carousel = { photos: [], folder: '', index: 0 };
+let hideTooltipTimer = null;
+
+countryTooltip.addEventListener('mouseenter', () => clearTimeout(hideTooltipTimer));
+countryTooltip.addEventListener('mouseleave', scheduleHideCountryTooltip);
+
+ctPrev.addEventListener('click', e => {
+  e.stopPropagation();
+  if (carousel.photos.length > 1)
+    carouselGoTo((carousel.index - 1 + carousel.photos.length) % carousel.photos.length);
+});
+ctNext.addEventListener('click', e => {
+  e.stopPropagation();
+  if (carousel.photos.length > 1)
+    carouselGoTo((carousel.index + 1) % carousel.photos.length);
+});
+
+function carouselGoTo(idx) {
+  carousel.index = idx;
+  ctImg.src = `assets/travel/${carousel.folder}/${carousel.photos[idx]}`;
+  ctImg.style.display = 'block';
+  ctDots.querySelectorAll('.ct-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+}
+
+function buildDots(count) {
+  ctDots.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const d = document.createElement('span');
+    d.className = 'ct-dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', e => { e.stopPropagation(); carouselGoTo(i); });
+    ctDots.appendChild(d);
+  }
+}
 
 function positionElem(el, evt, offX, offY) {
   const w = el.offsetWidth, h = el.offsetHeight;
@@ -135,16 +193,33 @@ function positionElem(el, evt, offX, offY) {
 function showCountryTooltip(mouseEvt, isoCode) {
   const c = VISITED_COUNTRIES[isoCode];
   if (!c) return;
+  clearTimeout(hideTooltipTimer);
   ctName.textContent = c.name;
-  if (c.slug) {
-    ctImg.src = `assets/travel/${c.slug}.jpg`;
-    ctImg.style.display = 'block';
-    ctImg.onerror = () => { ctImg.style.display = 'none'; };
-  } else {
+  const photos = c.photos || [];
+  carousel.photos = photos;
+  carousel.folder = c.folder || '';
+  carousel.index  = 0;
+
+  if (photos.length === 0) {
     ctImg.style.display = 'none';
+    ctPlaceholder.style.display = '';
+    ctPrev.style.display = 'none';
+    ctNext.style.display = 'none';
+    ctDots.innerHTML = '';
+  } else {
+    ctPlaceholder.style.display = 'none';
+    buildDots(photos.length);
+    ctPrev.style.display = photos.length > 1 ? '' : 'none';
+    ctNext.style.display = photos.length > 1 ? '' : 'none';
+    carouselGoTo(0);
   }
+
   countryTooltip.classList.add('ct-visible');
   positionElem(countryTooltip, mouseEvt, 16, -countryTooltip.offsetHeight / 2);
+}
+
+function scheduleHideCountryTooltip() {
+  hideTooltipTimer = setTimeout(hideCountryTooltip, 150);
 }
 
 function hideCountryTooltip() {
@@ -261,26 +336,29 @@ async function initWorldMap() {
         if (id === 840) {
           layer.on('click', openUSAModal);
           layer.on('mouseover', e => {
+            clearTimeout(hideTooltipTimer);
             layer.setStyle({ fillColor: MAP_USA_HOVER, fillOpacity: 0.8 });
             ctName.textContent = '🇺🇸 United States — click to explore states';
             ctImg.style.display = 'none';
+            ctPlaceholder.style.display = '';
+            ctPrev.style.display = 'none';
+            ctNext.style.display = 'none';
+            ctDots.innerHTML = '';
             countryTooltip.classList.add('ct-visible');
-            positionElem(countryTooltip, e.originalEvent, 16, -40);
+            positionElem(countryTooltip, e.originalEvent, 16, -countryTooltip.offsetHeight / 2);
           });
-          layer.on('mousemove', e => positionElem(countryTooltip, e.originalEvent, 16, -40));
           layer.on('mouseout', () => {
             layer.setStyle({ fillColor: MAP_USA, fillOpacity: 0.65 });
-            hideCountryTooltip();
+            scheduleHideCountryTooltip();
           });
         } else {
           layer.on('mouseover', e => {
             layer.setStyle({ fillColor: MAP_GREEN_HOVER, fillOpacity: 0.85 });
             showCountryTooltip(e.originalEvent, id);
           });
-          layer.on('mousemove', e => positionElem(countryTooltip, e.originalEvent, 16, -40));
           layer.on('mouseout', () => {
             layer.setStyle({ fillColor: MAP_GREEN, fillOpacity: 0.65 });
-            hideCountryTooltip();
+            scheduleHideCountryTooltip();
           });
         }
       }

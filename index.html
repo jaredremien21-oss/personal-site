@@ -518,7 +518,7 @@
       <div class="container">
         <div class="travel-stat-bar fade-in">
           <div class="t-stat">
-            <span class="t-stat-num" data-target="10">0</span>
+            <span class="t-stat-num" data-target="11">0</span>
             <span class="t-stat-label">Countries</span>
           </div>
           <div class="t-stat-div"></div>
@@ -666,15 +666,18 @@
     </div>
   </footer>
 
-  <!-- ── Country photo tooltip (fixed, follows cursor) ── -->
+  <!-- ── Country photo tooltip ── -->
   <div id="countryTooltip" class="country-tooltip" aria-hidden="true">
     <div class="ct-img-wrap">
-      <div class="ct-placeholder">
+      <div class="ct-placeholder" id="ctPlaceholder">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        <span>Photo coming soon</span>
+        <span>No photos yet</span>
       </div>
       <img id="ctImg" src="" alt="" class="ct-img" style="display:none" />
+      <button class="ct-arrow ct-arrow-prev" id="ctPrev" aria-label="Previous photo" style="display:none">&#8249;</button>
+      <button class="ct-arrow ct-arrow-next" id="ctNext" aria-label="Next photo" style="display:none">&#8250;</button>
     </div>
+    <div class="ct-dots" id="ctDots"></div>
     <div class="ct-name" id="ctName"></div>
   </div>
 
