@@ -79,6 +79,9 @@ RULES:
 // ════════════════════════════════════════════════════
 
 exports.handler = async (event) => {
+  console.log('API Key exists:', !!process.env.ANTHROPIC_API_KEY);
+  console.log('API Key prefix:', process.env.ANTHROPIC_API_KEY?.substring(0, 10));
+
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
