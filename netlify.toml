@@ -3,11 +3,6 @@
   functions = "netlify/functions"
   command   = "npm install"
 
-[[redirects]]
-  from   = "/api/chat"
-  to     = "/.netlify/functions/chat"
-  status = 200
-
 [[headers]]
   for = "/*"
   [headers.values]

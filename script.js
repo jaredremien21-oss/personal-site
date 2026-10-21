@@ -532,6 +532,21 @@ async function sendMessage() {
       body: JSON.stringify({ message: text, history: chatHistory }),
     });
     typingEl.remove();
+    if (res.status === 429) {
+      appendBubble('assistant', "Whoa, that's a lot of questions at once. Give it a minute and try again.");
+      chatHistory.pop(); // drop the unanswered question so history stays clean
+      chatSend.disabled = false;
+      chatInput.focus();
+      return;
+    }
+    if (res.status === 400) {
+      const err = await res.json().catch(() => ({}));
+      appendBubble('assistant', err.error || "I couldn't read that one. Try rephrasing?");
+      chatHistory.pop();
+      chatSend.disabled = false;
+      chatInput.focus();
+      return;
+    }
     if (!res.ok) throw new Error('Request failed');
     const data  = await res.json();
     const reply = data.reply || "Hmm, something went quiet. Try again?";
