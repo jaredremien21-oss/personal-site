@@ -278,11 +278,10 @@ usaModalClose?.addEventListener('click', closeUSAModal);
 usaModalBackdrop?.addEventListener('click', closeUSAModal);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeUSAModal(); });
 
-// ── Tile helper ───────────────────────────────────
-function addTiles(map) {
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    { subdomains: 'abcd', maxZoom: 19 }).addTo(map);
-}
+// ── Background ────────────────────────────────────
+// No tile layer: the country/state shapes are drawn from GeoJSON over a plain
+// "water" background set in CSS (.travel-map / .usa-mini-map). Removed the CARTO
+// basemap in Oct 2026 after CARTO began watermarking keyless tile requests.
 
 // ── Antimeridian normalization ────────────────────
 // Prevents horizontal streak lines for countries crossing ±180° (e.g. Russia)
@@ -314,7 +313,6 @@ async function initWorldMap() {
     center: [20, 10], zoom: 2, minZoom: 1, maxZoom: 6,
     scrollWheelZoom: false, attributionControl: false,
   });
-  addTiles(worldMapInst);
 
   try {
     const res   = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
@@ -327,7 +325,7 @@ async function initWorldMap() {
         const id = parseInt(f.id);
         const v  = id in VISITED_COUNTRIES;
         const fillColor = id === 840 ? MAP_USA : v ? MAP_GREEN : MAP_UNVISITED;
-        return { fillColor, fillOpacity: v ? 0.65 : 0.25, color: '#C8C0B4', weight: 0.5 };
+        return { fillColor, fillOpacity: v ? 0.75 : 1, color: '#C8C0B4', weight: 0.5 };
       },
       onEachFeature: (f, layer) => {
         const id = parseInt(f.id);
@@ -348,7 +346,7 @@ async function initWorldMap() {
             positionElem(countryTooltip, e.originalEvent, 16, -countryTooltip.offsetHeight / 2);
           });
           layer.on('mouseout', () => {
-            layer.setStyle({ fillColor: MAP_USA, fillOpacity: 0.65 });
+            layer.setStyle({ fillColor: MAP_USA, fillOpacity: 0.75 });
             scheduleHideCountryTooltip();
           });
         } else {
@@ -357,7 +355,7 @@ async function initWorldMap() {
             showCountryTooltip(e.originalEvent, id);
           });
           layer.on('mouseout', () => {
-            layer.setStyle({ fillColor: MAP_GREEN, fillOpacity: 0.65 });
+            layer.setStyle({ fillColor: MAP_GREEN, fillOpacity: 0.75 });
             scheduleHideCountryTooltip();
           });
         }
@@ -395,7 +393,7 @@ async function addStatesLayer(mapInst, isMini = false) {
     style: f => {
       const fips = parseInt(f.id);
       const v    = !UNVISITED_FIPS.has(fips);
-      return { fillColor: v ? MAP_GREEN : '#E8E2DA', fillOpacity: v ? 0.65 : 0.35,
+      return { fillColor: v ? MAP_GREEN : '#E8E2DA', fillOpacity: v ? 0.75 : 1,
                color: '#BFB8AF', weight: 0.8 };
     },
     onEachFeature: isMini ? null : (f, layer) => {
@@ -411,7 +409,7 @@ async function addStatesLayer(mapInst, isMini = false) {
         stateTooltip.style.top  = (e.originalEvent.clientY - 30) + 'px';
       });
       layer.on('mouseout', () => {
-        layer.setStyle({ fillOpacity: v ? 0.65 : 0.35 });
+        layer.setStyle({ fillOpacity: v ? 0.75 : 1 });
         hideStateTooltip();
       });
     }
@@ -423,7 +421,6 @@ async function initUSAMap() {
     center: [38, -96], zoom: 4,
     scrollWheelZoom: false, attributionControl: false,
   });
-  addTiles(usaMapInst);
   await addStatesLayer(usaMapInst, false);
 }
 
@@ -433,7 +430,6 @@ async function initMiniUSAMap() {
     zoomControl: false, scrollWheelZoom: false, attributionControl: false,
     dragging: false, doubleClickZoom: false, keyboard: false,
   });
-  addTiles(miniMapInst);
   await addStatesLayer(miniMapInst, true);
 }
 

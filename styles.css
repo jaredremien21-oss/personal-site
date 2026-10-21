@@ -1023,6 +1023,12 @@ input, button { font-family: var(--font-body); }
   height: clamp(380px, 52vw, 540px);
 }
 
+/* Plain "water" background behind the drawn country/state shapes (no tile layer) */
+.travel-map.leaflet-container,
+.usa-mini-map.leaflet-container {
+  background: #DCE5E4;
+}
+
 /* States progress bar (USA tab) */
 .states-progress {
   max-width: 680px;
