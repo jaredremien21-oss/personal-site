@@ -56,37 +56,39 @@ document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
 
 // ══ VISITED COUNTRIES (ISO 3166-1 numeric codes) ══
 // photos: filenames inside /assets/travel/[folder]/, alphabetical order
+// iso2: two-letter code for the flag image; pin: [lat, lng] where the flagpole stands
 const VISITED_COUNTRIES = {
-  392: { name: 'Japan',         folder: 'Japan',       photos: [
+  392: { name: 'Japan',         iso2: 'jp', pin: [36.5, 138.5], folder: 'Japan',       photos: [
     '1E772D0C-5AB1-4C3F-8340-2A7504FF8C33-46145-00002A57F24C96C3.JPG',
     '3FFA8655-924F-4F89-8F2E-E39D019BF767-46145-00002B5BE5DA840A.JPG',
     'DSCF7481.JPG','DSCF7813.JPG','IMG_6717.JPG','IMG_6723.JPG','IMG_8072.JPG',
   ]},
-  756: { name: 'Switzerland',   folder: 'Switzerland', photos: [
+  756: { name: 'Switzerland',   iso2: 'ch', pin: [46.8, 8.2], folder: 'Switzerland', photos: [
     'DSCF1516.JPG','DSCF1523.JPG','DSCF1783.JPG','DSCF2162.JPG','DSCF2339.JPG',
     'DSCF2469.JPG','DSCF2556.JPG','DSCF2623.JPG','DSCF2657.JPG','DSCF2687.JPG',
   ]},
-  352: { name: 'Iceland',       folder: 'Iceland',     photos: [
+  352: { name: 'Iceland',       iso2: 'is', pin: [64.9, -18.6], folder: 'Iceland',     photos: [
     'IMG_1683.JPG','IMG_1720.JPG','IMG_1819.JPG','IMG_2223.JPG','IMG_4093.JPG',
   ]},
-  724: { name: 'Spain',         folder: 'Spain',       photos: [
+  724: { name: 'Spain',         iso2: 'es', pin: [40.3, -3.4], folder: 'Spain',       photos: [
     'IMG_0273.JPG','IMG_0321.JPG','IMG_2551.JPG',
   ]},
-  380: { name: 'Italy',         folder: 'Italy',       photos: [
+  380: { name: 'Italy',         iso2: 'it', pin: [42.6, 12.7], folder: 'Italy',       photos: [
     'IMG_1446.JPG','IMG_1459.JPG','IMG_1766.JPG','IMG_7050.JPG','IMG_9135.JPG','IMG_9170.JPG',
   ]},
-  300: { name: 'Greece',        folder: 'Greece',      photos: [
+  300: { name: 'Greece',        iso2: 'gr', pin: [39.3, 22.0], folder: 'Greece',      photos: [
     'IMG_0164.JPG','IMG_0176.JPG','IMG_0204.JPG','IMG_2296.JPG',
   ]},
-  152: { name: 'Chile',         folder: 'Chile',       photos: [] },
-  484: { name: 'Mexico',        folder: 'Mexico',      photos: [
+  152: { name: 'Chile',         iso2: 'cl', pin: [-30.0, -70.8], folder: 'Chile',       photos: [] },
+  484: { name: 'Mexico',        iso2: 'mx', pin: [23.6, -102.5], folder: 'Mexico',      photos: [
     'DSCF2559.JPG','DSCF2648.JPG','IMG_6765.JPG','IMG_7956.JPG',
   ]},
-  620: { name: 'Portugal',      folder: 'Portugal',    photos: [] },
-  528: { name: 'Netherlands',   folder: 'Netherlands', photos: [
+  620: { name: 'Portugal',      iso2: 'pt', pin: [39.6, -8.3], folder: 'Portugal',    photos: [] },
+  528: { name: 'Netherlands',   iso2: 'nl', pin: [52.3, 5.4], folder: 'Netherlands', photos: [
     'IMG_0134.JPG','IMG_4250.JPG','IMG_4297.JPG','IMG_5619.JPG',
   ]},
-  840: { name: 'United States', folder: null,          photos: [] }, // USA → opens states modal
+  124: { name: 'Canada',        iso2: 'ca', pin: [58.0, -106.0], folder: 'Canada', photos: [] },
+  840: { name: 'United States', iso2: 'us', pin: [44.5, -108.0], folder: null,          photos: [] }, // USA → opens states modal
 };
 
 // ══ US STATES (FIPS codes for unvisited) ══════════
@@ -148,8 +150,6 @@ const stateTooltip   = document.getElementById('stateTooltip');
 const carousel = { photos: [], folder: '', index: 0 };
 let hideTooltipTimer = null;
 
-countryTooltip.addEventListener('mouseenter', () => clearTimeout(hideTooltipTimer));
-countryTooltip.addEventListener('mouseleave', scheduleHideCountryTooltip);
 
 ctPrev.addEventListener('click', e => {
   e.stopPropagation();
@@ -184,6 +184,7 @@ function positionElem(el, evt, offX, offY) {
   let left = evt.clientX + offX;
   let top  = evt.clientY + offY;
   if (left + w > window.innerWidth  - 8) left = evt.clientX - w - Math.abs(offX);
+  if (left < 8) left = 8;
   if (top  < 8) top = 8;
   if (top  + h > window.innerHeight - 8) top = window.innerHeight - h - 8;
   el.style.left = left + 'px';
@@ -218,13 +219,76 @@ function showCountryTooltip(mouseEvt, isoCode) {
   positionElem(countryTooltip, mouseEvt, 16, -countryTooltip.offsetHeight / 2);
 }
 
-function scheduleHideCountryTooltip() {
-  hideTooltipTimer = setTimeout(hideCountryTooltip, 150);
-}
-
 function hideCountryTooltip() {
   countryTooltip.classList.remove('ct-visible');
 }
+
+// ── Flagpoles ─────────────────────────────────────
+// Small poles on each visited country. Clicking one (or the country itself)
+// unrolls its flag and opens the photo card; clicking elsewhere rolls it back up.
+const FLAG_URL = iso2 => `https://cdn.jsdelivr.net/npm/flag-icons@7.6.0/flags/4x3/${iso2}.svg`;
+const flagMarkers = {};      // country id → Leaflet marker
+let activeFlagId = null;
+
+function flagpoleIcon(c) {
+  return L.divIcon({
+    className: 'flagpole-icon',
+    html: `<div class="flagpole" aria-hidden="true">
+             <span class="fp-pole"></span>
+             <span class="fp-finial"></span>
+             <span class="fp-flag" style="background-image:url('${FLAG_URL(c.iso2)}')"></span>
+           </div>`,
+    iconSize: [26, 28],
+    iconAnchor: [3, 27],
+  });
+}
+
+function setFlag(id, open) {
+  const el = flagMarkers[id]?.getElement();
+  if (!el) return;
+  el.classList.toggle('fp-open', open);
+  el.style.zIndex = open ? 1000 : '';
+}
+
+function closeCountry() {
+  if (activeFlagId !== null) setFlag(activeFlagId, false);
+  activeFlagId = null;
+  hideCountryTooltip();
+}
+
+function openCountry(id) {
+  if (activeFlagId === id) { closeCountry(); return; }   // second click rolls it back up
+  closeCountry();
+  activeFlagId = id;
+  setFlag(id, true);
+
+  if (id === 840) {                                     // USA → states modal after the flag unrolls
+    setTimeout(() => { closeCountry(); openUSAModal(); }, 650);
+    return;
+  }
+  const el  = flagMarkers[id]?.getElement();
+  const box = el ? el.getBoundingClientRect() : { left: 0, right: 0, top: 0, bottom: 0 };
+  showCountryTooltip({ clientX: box.right + 4, clientY: box.top + 6 }, id);
+
+  // Narrow screens: centre the card under the flag instead of beside it,
+  // so it never covers the flag or runs off the edge.
+  if (window.innerWidth < 640) {
+    const w = countryTooltip.offsetWidth, h = countryTooltip.offsetHeight;
+    const left = Math.min(Math.max(8, (box.left + box.right) / 2 - w / 2), window.innerWidth - w - 8);
+    let top = box.bottom + 8;
+    if (top + h > window.innerHeight - 8) top = Math.max(8, box.top - h - 8);
+    countryTooltip.style.left = left + 'px';
+    countryTooltip.style.top  = top + 'px';
+  }
+}
+
+document.addEventListener('click', e => {
+  if (activeFlagId === null) return;
+  if (e.target.closest('#countryTooltip') || e.target.closest('#worldMap')) return;
+  closeCountry();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCountry(); });
+window.addEventListener('scroll', () => { if (activeFlagId !== null) closeCountry(); }, { passive: true });
 
 function showStateTooltip(evt, name) {
   stateTooltip.textContent = name;
@@ -330,37 +394,24 @@ async function initWorldMap() {
       onEachFeature: (f, layer) => {
         const id = parseInt(f.id);
         if (!(id in VISITED_COUNTRIES)) return;
-
-        if (id === 840) {
-          layer.on('click', openUSAModal);
-          layer.on('mouseover', e => {
-            clearTimeout(hideTooltipTimer);
-            layer.setStyle({ fillColor: MAP_USA_HOVER, fillOpacity: 0.8 });
-            ctName.textContent = '🇺🇸 United States — click to explore states';
-            ctImg.style.display = 'none';
-            ctPlaceholder.style.display = '';
-            ctPrev.style.display = 'none';
-            ctNext.style.display = 'none';
-            ctDots.innerHTML = '';
-            countryTooltip.classList.add('ct-visible');
-            positionElem(countryTooltip, e.originalEvent, 16, -countryTooltip.offsetHeight / 2);
-          });
-          layer.on('mouseout', () => {
-            layer.setStyle({ fillColor: MAP_USA, fillOpacity: 0.75 });
-            scheduleHideCountryTooltip();
-          });
-        } else {
-          layer.on('mouseover', e => {
-            layer.setStyle({ fillColor: MAP_GREEN_HOVER, fillOpacity: 0.85 });
-            showCountryTooltip(e.originalEvent, id);
-          });
-          layer.on('mouseout', () => {
-            layer.setStyle({ fillColor: MAP_GREEN, fillOpacity: 0.75 });
-            scheduleHideCountryTooltip();
-          });
-        }
+        const base  = id === 840 ? MAP_USA : MAP_GREEN;
+        const hover = id === 840 ? MAP_USA_HOVER : MAP_GREEN_HOVER;
+        layer.on('mouseover', () => layer.setStyle({ fillColor: hover, fillOpacity: 0.85 }));
+        layer.on('mouseout',  () => layer.setStyle({ fillColor: base,  fillOpacity: 0.75 }));
+        layer.on('click', e => { L.DomEvent.stopPropagation(e); openCountry(id); });
       }
     }).addTo(worldMapInst);
+
+    // Flagpoles on every visited country
+    Object.entries(VISITED_COUNTRIES).forEach(([key, c]) => {
+      if (!c.pin || !c.iso2) return;
+      const id = Number(key);
+      const m = L.marker(c.pin, { icon: flagpoleIcon(c), keyboard: true, title: c.name, alt: c.name, riseOnHover: true })
+        .on('click', e => { L.DomEvent.stopPropagation(e); openCountry(id); })
+        .addTo(worldMapInst);
+      flagMarkers[id] = m;
+    });
+    worldMapInst.on('click movestart zoomstart', closeCountry);
 
     // USA click badge — always visible hint
     const usaBadgeIcon = L.divIcon({
